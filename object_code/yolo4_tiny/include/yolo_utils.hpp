@@ -10,8 +10,17 @@
 // Load class names from a file
 std::vector<std::string> loadClassNames(const std::string& classFile);
 
-// Draw bounding boxes around detected objects
-void drawPredictions(int classId, float confidence, int left, int top, int right, int bottom, 
-                     cv::Mat& frame, const std::vector<std::string>& classNames);
+// Initialize the YOLO model with configuration and weights files
+void initializeYOLO(cv::dnn::Net& net, const std::string& cfgFile, const std::string& weightsFile);
+
+// Detect objects in the frame
+void detectObjects(const cv::Mat& frame, cv::dnn::Net& net,
+                   std::vector<cv::Rect>& boxes, std::vector<int>& classIds,
+                   std::vector<float>& confidences, float confThreshold = 0.5, float nmsThreshold = 0.4);
+
+// Draw bounding boxes and labels on the frame
+void drawDetections(cv::Mat& frame, const std::vector<cv::Rect>& boxes,
+                    const std::vector<int>& classIds, const std::vector<float>& confidences,
+                    const std::vector<std::string>& classNames);
 
 #endif // YOLO_UTILS_HPP

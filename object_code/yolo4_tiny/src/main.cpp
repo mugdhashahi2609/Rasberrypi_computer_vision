@@ -1,76 +1,76 @@
 #include <opencv2/dnn.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
+#include <fstream>
 #include <iostream>
+#include <thread>
 #include "yolo_utils.hpp"
 
 using namespace cv;
 using namespace cv::dnn;
 using namespace std;
 
-int main() {
-    const string modelConfiguration = "../models/yolov4-tiny.cfg";
-    const string modelWeights = "../models/yolov4-tiny.weights";
-    const string classFile = "../models/coco.names";
+// Function to capture and process frames from one camera
+void processCamera(int cameraId, cv::dnn::Net& net, const vector<string>& classNames, float confThreshold, float nmsThreshold) {
+    // Set device paths based on cameraId
+    string devicePath = (cameraId == 0) ? "/dev/video0" : "/dev/video2";  // Only video0 and video2 are available
 
-    // Load YOLO model
-    Net net = readNetFromDarknet(modelConfiguration, modelWeights);
-    net.setPreferableBackend(DNN_BACKEND_OPENCV);
-    net.setPreferableTarget(DNN_TARGET_CPU);
-
-    // Load class names
-    vector<string> classNames = loadClassNames(classFile);
-
-    // Open the default camera
-    VideoCapture cap(0);
+    // Open the camera using the V4L2 backend
+    VideoCapture cap(devicePath, cv::CAP_V4L2);  // Use V4L2 backend explicitly
     if (!cap.isOpened()) {
-        cerr << "Error: Unable to open the camera" << endl;
-        return -1;
+        cerr << "Error: Unable to open camera " << cameraId << " at " << devicePath << endl;
+        return;
     }
 
-    Mat frame, blob;
+    Mat frame;
     while (true) {
         cap >> frame;
         if (frame.empty()) break;
 
-        // Prepare the input for YOLO
-        blobFromImage(frame, blob, 1 / 255.0, Size(416, 416), Scalar(), true, false);
-        net.setInput(blob);
+        // Perform detection
+        vector<Rect> boxes;
+        vector<int> classIds;
+        vector<float> confidences;
+        detectObjects(frame, net, boxes, classIds, confidences, confThreshold, nmsThreshold);
 
-        // Forward pass
-        vector<Mat> netOutputs;
-        net.forward(netOutputs, net.getUnconnectedOutLayersNames());
+        // Draw bounding boxes on the frame
+        drawDetections(frame, boxes, classIds, confidences, classNames);
 
-        // Process detections
-        for (size_t i = 0; i < netOutputs.size(); ++i) {
-            float* data = (float*)netOutputs[i].data;
-            for (int j = 0; j < netOutputs[i].rows; ++j, data += netOutputs[i].cols) {
-                Mat scores = netOutputs[i].row(j).colRange(5, netOutputs[i].cols);
-                Point classIdPoint;
-                double confidence;
-                minMaxLoc(scores, 0, &confidence, 0, &classIdPoint);
-                if (confidence > 0.5) {
-                    int centerX = (int)(data[0] * frame.cols);
-                    int centerY = (int)(data[1] * frame.rows);
-                    int width = (int)(data[2] * frame.cols);
-                    int height = (int)(data[3] * frame.rows);
-                    int left = centerX - width / 2;
-                    int top = centerY - height / 2;
+        // Display the frame
+        imshow("YOLOv4-tiny - Camera " + to_string(cameraId), frame);
 
-                    // Draw predictions
-                    drawPredictions(classIdPoint.x, (float)confidence, left, top, left + width, top + height, frame, classNames);
-                }
-            }
-        }
-
-        // Show the output
-        imshow("YOLOv4-tiny Object Detection", frame);
-
-        // Exit on pressing ESC key
+        // Exit on ESC key
         if (waitKey(1) == 27) break;
     }
 
     cap.release();
     destroyAllWindows();
+}
+
+int main() {
+    // Load YOLOv4-tiny model files
+    const string classFile = "/home/mugdha/akshay/object_code/yolo4_tiny/models/coco.names";  
+    const string modelConfiguration = "/home/mugdha/akshay/object_code/yolo4_tiny/models/yolov4-tiny.cfg";
+    const string modelWeights = "/home/mugdha/akshay/object_code/yolo4_tiny/models/yolov4-tiny.weights";
+
+    // Confidence and NMS Thresholds
+    const float confThreshold = 0.5f;  // Confidence threshold
+    const float nmsThreshold = 0.4f;   // Non-maxima suppression threshold
+
+    // Load the YOLO model
+    dnn::Net net;
+    initializeYOLO(net, modelConfiguration, modelWeights);
+
+    // Load class names
+    vector<string> classNames = loadClassNames(classFile);
+
+    // Start threads for both cameras (camera 0 and camera 2)
+    thread camera1Thread(processCamera, 0, ref(net), ref(classNames), confThreshold, nmsThreshold);  // First camera (video0)
+    thread camera2Thread(processCamera, 2, ref(net), ref(classNames), confThreshold, nmsThreshold);  // Second camera (video2)
+
+    // Wait for both threads to finish
+    camera1Thread.join();
+    camera2Thread.join();
+
     return 0;
 }

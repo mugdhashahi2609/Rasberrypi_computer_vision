@@ -248,5 +248,10 @@ CMakeFiles/yolov4_tiny.dir/src/main.cpp.o: \
  /usr/include/opencv4/opencv2/videoio.hpp \
  /usr/include/opencv4/opencv2/imgproc.hpp \
  /usr/include/opencv4/opencv2/imgproc/segmentation.hpp \
- /usr/include/c++/12/iostream \
+ /usr/include/c++/12/fstream /usr/include/c++/12/bits/codecvt.h \
+ /usr/include/aarch64-linux-gnu/c++/12/bits/basic_file.h \
+ /usr/include/aarch64-linux-gnu/c++/12/bits/c++io.h \
+ /usr/include/c++/12/bits/fstream.tcc /usr/include/c++/12/iostream \
+ /usr/include/c++/12/thread /usr/include/c++/12/bits/std_thread.h \
+ /usr/include/c++/12/bits/this_thread_sleep.h \
  /home/mugdha/akshay/object_code/yolo4_tiny/include/yolo_utils.hpp
