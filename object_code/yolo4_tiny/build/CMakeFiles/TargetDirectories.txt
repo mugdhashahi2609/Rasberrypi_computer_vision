@@ -1,0 +1,3 @@
+/home/mugdha/akshay/object_code/yolo4_tiny/build/CMakeFiles/yolov4_tiny.dir
+/home/mugdha/akshay/object_code/yolo4_tiny/build/CMakeFiles/edit_cache.dir
+/home/mugdha/akshay/object_code/yolo4_tiny/build/CMakeFiles/rebuild_cache.dir
